@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TemplateContainer uid="2.25.2048721840193.611045891476.108817855993" name="Qifp 3D Feature Extraction" authors="The QIFP team" version="1" creationDate="2016-07-12" description="Template for Qifp 3D Feature Extraction Pipeline" xsi:schemaLocation="gme://caCORE.caCORE/3.2/edu.northwestern.radiology.AIMTemplate AIMTemplate_v2rv13.xsd" xmlns="gme://caCORE.caCORE/3.2/edu.northwestern.radiology.AIMTemplate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <Template  templateType="Image" uid="2.25.1580094462958589198440056709835462161979" name="qifp" authors="ealkim" version="1.1" creationDate="2016-07-12" description="Template for Qifp 3D Feature Extraction Pipeline" codingSchemeVersion="1.0" codeMeaning="epad-plugin" codeValue="qifp" codingSchemeDesignator="99EPAD">
+       <Component label="Label" itemNumber="0" authors="Default User" explanatoryText="" minCardinality="1" maxCardinality="1" shouldDisplay="true" groupLabel="" id="2.25.160559461531180601689784456811019731675">
+        <Label>Label</Label>
+      </Component>
+   </Template>
+</TemplateContainer>
