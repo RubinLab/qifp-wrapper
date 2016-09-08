@@ -379,9 +379,11 @@ public class QIFPHandler extends AbstractPluginServletHandler
 					
 					File dsoFile =null;
 					File dsoZip = null;
+					boolean result =false;
 					// Get DSO if any					
 					if (templateImageAnnotationCollection
-							.getImageAnnotations().get(0).getSegmentationEntityCollection()!=null) {
+							.getImageAnnotations().get(0).getSegmentationEntityCollection()!=null && templateImageAnnotationCollection
+							.getImageAnnotations().get(0).getSegmentationEntityCollection().size()!=0) {
 						DicomSegmentationEntity dicomSegmentationEntity = (DicomSegmentationEntity) templateImageAnnotationCollection
 																				.getImageAnnotations().get(0).getSegmentationEntityCollection().get(0);
 						String dsoImageUID = dicomSegmentationEntity.getSopInstanceUid().getRoot();
@@ -394,9 +396,12 @@ public class QIFPHandler extends AbstractPluginServletHandler
 						dsoFiles.add(dsoFile);
 						
 						dsoZip = generateZipFile(dsoFiles,dsoFile.getParent());
-						
+						result=invokePlugin(templateImageAnnotationCollection, dicomZip, dsoZip, projectID);
 					}
-					boolean result = invokePlugin(templateImageAnnotationCollection, dicomZip, dsoZip, projectID);						
+					else {
+						log.warning("qifp wrapper: qifp requires dso");
+					}
+					 					
 					if (result) {
 						event_status = "complete";
 						log.info("qifp wrapper: plugin execution complete");
