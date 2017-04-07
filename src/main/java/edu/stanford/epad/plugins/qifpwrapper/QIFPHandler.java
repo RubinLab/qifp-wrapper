@@ -364,6 +364,8 @@ public class QIFPHandler extends AbstractPluginServletHandler
 //					String imageUID = imageStudy.getImageSeries().getImageCollection().get(0).getSopInstanceUid().getRoot();
 					
 					String username = templateImageAnnotationCollection.getUser().getName().getValue();
+					if (username.equalsIgnoreCase("shared"))
+						username=null;
 					List<File> dicomFiles = new ArrayList<>();
 					List<String> imageUIDs = PluginDicomUtil.getDicomImageUIDsInSeries(studyUID, seriesUID, sessionID, username);
 					for (String imageUID: imageUIDs) {
@@ -439,11 +441,9 @@ public class QIFPHandler extends AbstractPluginServletHandler
 		return authStringEnc;
 	}
 	
-	private static String buildEPADSessionURL(String epadHost)
+	private static String buildEPADSessionURL(String epadHost, int port)
 	{
-		int qifpPort = 8090;
-
-		return buildEPADBaseURL(epadHost, qifpPort, "/qifp/session/");
+		return buildEPADBaseURL(epadHost, port, "/qifp/session/");
 	}
 	
 	private static String buildEPADBaseURL(String host, int port, String base)
@@ -454,18 +454,20 @@ public class QIFPHandler extends AbstractPluginServletHandler
 	private static String buildEPADBaseURL(String host, int port, String base, String ext)
 	{
 		StringBuilder sb = new StringBuilder();
-
-		sb.append("http://").append(host);
-		sb.append(":").append(port);
+		if (!host.startsWith("http"))
+			sb.append("http://");
+		sb.append(host);
+		if (port!=-1)
+			sb.append(":").append(port);
 		sb.append(base);
 		sb.append(ext);
 
 		return sb.toString();
 	}
 
-	private static EPADSessionResponse getEPADSessionID(String username, String password, String epadHost)
+	private static EPADSessionResponse getEPADSessionID(String username, String password, String epadHost, int port)
 	{
-		String epadSessionURL = buildEPADSessionURL(epadHost);
+		String epadSessionURL = buildEPADSessionURL(epadHost, port);
 		HttpClient client = new HttpClient();
 		PostMethod method = new PostMethod(epadSessionURL);
 		String authString = buildAuthorizationString(username, password);
@@ -520,9 +522,9 @@ public class QIFPHandler extends AbstractPluginServletHandler
 	}
 	
 	
-	public static int invalidateRemoteEPADSessionID(String epadSessionID, String epadHost)
+	public static int invalidateRemoteEPADSessionID(String epadSessionID, String epadHost, int port)
 	{
-		String epadSessionURL = buildEPADSessionURL(epadHost);
+		String epadSessionURL = buildEPADSessionURL(epadHost, port);
 		HttpClient client = new HttpClient();
 		DeleteMethod method = new DeleteMethod(epadSessionURL);
 		int epadStatusCode;
@@ -587,7 +589,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 		
 		try {
 			
-			String workflowID="3DFeatureExtraction";
+			String workflowID="3DFeatureExtractionOld";
 //			String host="epad-prod8.stanford.edu";
 //			String url="http://"+host+":8090/qifp/v2/workflows/"+ workflowID +"/run/?projectID="+"epad-dev4";
 			String statusUrl=buildEPADBaseURL(EPADConfig.xnatServer, EPADConfig.epadPort, "/epad/statuslistener/");
@@ -599,9 +601,9 @@ public class QIFPHandler extends AbstractPluginServletHandler
 
 			
 			log.info("qifp wrapper: connecting qifp");
-			EPADSessionResponse resp= getEPADSessionID(EPADConfig.qifpUserName, EPADConfig.qifpUserPass, EPADConfig.qifpServer);
+			EPADSessionResponse resp= getEPADSessionID(EPADConfig.qifpUserName, EPADConfig.qifpUserPass, EPADConfig.qifpServer, EPADConfig.qifpPort);
 			String sessionID = resp.response;
-			log.info("qifp wrapper: login response " +resp.response );
+			log.info("qifp wrapper: login response " +resp.response + " url "+ url);
 			
 			
 //			log.info("qifp wrapper: check if files exist");
@@ -613,7 +615,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 			}
 			log.info("qifp wrapper: disconnect");
 			
-			invalidateRemoteEPADSessionID(sessionID, EPADConfig.qifpServer);
+			invalidateRemoteEPADSessionID(sessionID, EPADConfig.qifpServer, EPADConfig.qifpPort);
 			
 
 
@@ -677,13 +679,14 @@ public class QIFPHandler extends AbstractPluginServletHandler
 		double featureVersion = 1.0;
 		try {
 			ImageAnnotationCollection imageAnnotationCollection = PluginAIMUtil.getImageAnnotationCollectionFromServer(info[0], info[1]);
-			EPADSessionResponse session=getEPADSessionID(EPADConfig.qifpUserName, EPADConfig.qifpUserPass, EPADConfig.qifpServer);
+			EPADSessionResponse session=getEPADSessionID(EPADConfig.qifpUserName, EPADConfig.qifpUserPass, EPADConfig.qifpServer, EPADConfig.qifpPort);
 			try {
 				//get features
 				ArrayList<String[]> features = downloadFeaturesFromRemote(EPADConfig.qifpUserName,buildFileUrl( workflowId, instanceID), session.response);
 				log.info("Number of features:"+features.size());
 				//create a new unique id for the annotation
-				log.info("new aimID:" + imageAnnotationCollection.refreshUniqueIdentifier());
+				//temporary. Do not create a new aim
+//				log.info("new aimID:" + imageAnnotationCollection.refreshUniqueIdentifier());
 				CD pluginLex=lex.get("99EPADP2");
 				//set the template
 				//the codevalue and codemeaning of template 
@@ -694,14 +697,17 @@ public class QIFPHandler extends AbstractPluginServletHandler
 				//add the new features
 				imageAnnotationCollection = PluginAIMUtil.addFeatures(imageAnnotationCollection, features, featureVersion, pluginLex );
 				log.info("constructed aim:"+imageAnnotationCollection.toStringXML());
-				if (imageAnnotationCollection.getImageAnnotation().getName().getValue().contains(getName())){
-					String newName=updateName(imageAnnotationCollection.getImageAnnotation().getName().getValue());
-					imageAnnotationCollection.getImageAnnotation().getName().setValue(newName);
-				} 
-				else 
-					imageAnnotationCollection.getImageAnnotation().getName().setValue(imageAnnotationCollection.getImageAnnotation().getName().getValue()+" by "+ getName());
+				//do not change the name
+//				if (imageAnnotationCollection.getImageAnnotation().getName().getValue().contains(getName())){
+//					String newName=updateName(imageAnnotationCollection.getImageAnnotation().getName().getValue());
+//					imageAnnotationCollection.getImageAnnotation().getName().setValue(newName);
+//				} 
+//				else 
+//					imageAnnotationCollection.getImageAnnotation().getName().setValue(imageAnnotationCollection.getImageAnnotation().getName().getValue()+" by "+ getName());
 				//save the annotation
-				PluginAIMUtil.sendImageAnnotationToServer(imageAnnotationCollection, info[1], info[0]);
+				//temporary update the old one don't create new
+//				PluginAIMUtil.sendImageAnnotationToServer(imageAnnotationCollection, info[1], info[0]);
+				PluginAIMUtil.sendImageAnnotationToServer(imageAnnotationCollection, info[1]);
 				PluginAIMUtil.saveAnnotationToAnnotationsDirectory(imageAnnotationCollection);	
 				log.info("done with plugin with instance id:"+instanceID);
 				runningPlugins.remove(instanceID);
