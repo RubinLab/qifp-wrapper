@@ -363,7 +363,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 					String seriesUID = imageStudy.getImageSeries().getInstanceUid().getRoot();
 //					String imageUID = imageStudy.getImageSeries().getImageCollection().get(0).getSopInstanceUid().getRoot();
 					
-					String username = templateImageAnnotationCollection.getUser().getName().getValue();
+					String username = templateImageAnnotationCollection.getUser().getLoginName().getValue();
 					if (username.equalsIgnoreCase("shared"))
 						username=null;
 					List<File> dicomFiles = new ArrayList<>();
@@ -693,7 +693,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 				CD typeCode = new CD("qifp","epad-plugin",pluginLex.getCodeSystemName(),pluginLex.getCodeSystemVersion());
 
 				imageAnnotationCollection.getImageAnnotation().getListTypeCode().clear();
-				imageAnnotationCollection.getImageAnnotation().getListTypeCode().add(typeCode);
+				imageAnnotationCollection.getImageAnnotation().addTypeCode(typeCode);
 				//add the new features
 				imageAnnotationCollection = PluginAIMUtil.addFeatures(imageAnnotationCollection, features, featureVersion, pluginLex );
 				log.info("constructed aim:"+imageAnnotationCollection.toStringXML());
