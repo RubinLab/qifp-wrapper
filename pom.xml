@@ -125,23 +125,6 @@
 	    <artifactId>json</artifactId>
 	    <version>20140107</version>
 	</dependency>
-	
-		<!-- This is in a local project repository (in ./lib) because we could 
-			not find a public Maven repository containing it. -->
-		<dependency>
-			<groupId>com.matlab</groupId>
-			<artifactId>javabuilder</artifactId>
-			<version>${matlab.version}</version>
-		</dependency>
-
-		<!-- Contains version-dependent MATLAB-generated Java code used by the 
-			plugin; stored in this project repository in ./lib. -->
-		<dependency>
-			<groupId>edu.stanford.epad.plugins.sampleplugin</groupId>
-			<artifactId>modifyroi_java</artifactId>
-			<version>${matlab.version}</version>
-		</dependency>
-
 		<dependency>
 			<groupId>edu.stanford.hakan.aim4api</groupId>
 			<artifactId>aimapi</artifactId>

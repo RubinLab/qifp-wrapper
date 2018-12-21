@@ -377,10 +377,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 					
 					log.info("qifp wrapper: zipping dicom files");
 					
-					File dicomZip = generateZipFile(dicomFiles,dicomFiles.get(0).getParent());
-					
 					File dsoFile =null;
-					File dsoZip = null;
 					boolean result =false;
 					// Get DSO if any					
 					if (templateImageAnnotationCollection
@@ -393,12 +390,12 @@ public class QIFPHandler extends AbstractPluginServletHandler
 						dsoFile = File.createTempFile(dsoImageUID, ".dcm");
 						DCM4CHEEUtil.downloadDICOMFileFromWADO(studyUID, "*", dsoImageUID, dsoFile);
 
-						log.info("qifp wrapper: zipping dso files");
-						List<File> dsoFiles = new ArrayList<>();
-						dsoFiles.add(dsoFile);
+						log.info("qifp wrapper: adding dso files to the list");
+						dicomFiles.add(dsoFile);
 						
-						dsoZip = generateZipFile(dsoFiles,dsoFile.getParent());
-						result=invokePlugin(templateImageAnnotationCollection, dicomZip, dsoZip, projectID);
+						File dicomZip = generateZipFile(dicomFiles,dicomFiles.get(0).getParent());
+						
+						result=invokePlugin(templateImageAnnotationCollection, dicomZip, projectID);
 					}
 					else {
 						log.warning("qifp wrapper: qifp requires dso");
@@ -546,7 +543,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 		return epadStatusCode;
 	}
 	
-	public static String sendRequest(String url, String epadSessionID, File dicomsZip,File dsosZip, String statusURL) throws Exception
+	public static String sendRequest(String url, String epadSessionID, File dicomsZip, String statusURL) throws Exception
 	{
 		HttpClient client = new HttpClient();
         PostMethod postMethod = new PostMethod(url);
@@ -554,7 +551,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 			postMethod.setRequestHeader("Cookie", "JSESSIONID=" + epadSessionID);
         try
         {
-	        Part[] parts = {new FilePart("dicoms", dicomsZip), new FilePart("dsos", dsosZip), new StringPart("statusUrl", statusURL)};
+	        Part[] parts = {new FilePart("dicoms", dicomsZip), new StringPart("statusUrl", statusURL)};
 	         
 	        postMethod.setRequestEntity(new MultipartRequestEntity(parts, postMethod.getParams()));
 	
@@ -584,7 +581,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 		return host.split("\\.")[0];//needs to excape character as it uses regex
 	}
 	
-	private boolean invokePlugin (ImageAnnotationCollection imageAnnotationCollection, File dicomZip,File dsoZip,String projectID) {
+	private boolean invokePlugin (ImageAnnotationCollection imageAnnotationCollection, File dicomZip,String projectID) {
 		
 		
 		try {
@@ -609,7 +606,7 @@ public class QIFPHandler extends AbstractPluginServletHandler
 //			log.info("qifp wrapper: check if files exist");
 			
 			log.info("qifp wrapper: send request");
-			String instanceId=sendRequest(url, sessionID, dicomZip, dsoZip, statusUrl);
+			String instanceId=sendRequest(url, sessionID, dicomZip, statusUrl);
 			if (instanceId!=null) {//plugin request sent successfully
 				runningPlugins.put(instanceId, new String[] {imageAnnotationCollection.getUniqueIdentifier().getRoot(), projectID, workflowID});
 			}
